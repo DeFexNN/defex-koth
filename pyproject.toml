@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "defex-koth"
+version = "1.0.0"
+description = "King of the Hill battle orchestrator: delegate AI clients as parallel fronts, auto kickoff, hold guard, receipts"
+requires-python = ">=3.11"
+dependencies = ["PyYAML>=6.0"]
+
+[project.scripts]
+defex-ctf = "ctf_orchestrator.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["ctf_orchestrator*"]

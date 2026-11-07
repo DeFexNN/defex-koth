@@ -1,0 +1,53 @@
+# koth.conf.example — generic King-of-the-Hill config for `ctf.py koth`.
+#
+# Copy to koth.conf (chmod 600) and fill in for the authorized target:
+#
+#   cp koth.conf.example koth.conf
+#   $EDITOR koth.conf
+#   python3 ctf.py koth discover --config koth.conf --json
+#
+# This file is SOURCED by the KOTH-OPS kit scripts. Treat it as code.
+# Every value is a placeholder: nothing here is tied to a specific box, and
+# no real IP, username, or path belongs in this file.
+# Precedence: environment > this file (via ${VAR:-default}) > kit default.
+
+# --- target / checker -------------------------------------------------------
+TARGET="${TARGET:-koth.example.test}"
+CHECKER_URL="${CHECKER_URL:-http://koth.example.test/check}"
+EXPECT_KING="${EXPECT_KING:-our-king-name}"
+
+# --- staging ----------------------------------------------------------------
+STAGE_DIR="${STAGE_DIR:-/home/example/backups/files}"
+
+# --- foothold ---------------------------------------------------------------
+# Template that runs one command as the low-priv user; {CMD} is shell-quoted.
+FOOTHOLD_CMD="${FOOTHOLD_CMD:-ssh -p 22 lowpriv@${TARGET} -- {CMD}}"
+FOOTHOLD_ADAPTER="${FOOTHOLD_ADAPTER:-template}"
+SSH_USER="${SSH_USER:-lowpriv}"
+SSH_PORT="${SSH_PORT:-22}"
+SSH_KEY="${SSH_KEY:-}"
+
+# --- root vector hints ------------------------------------------------------
+ROOT_CRON_TARGET="${ROOT_CRON_TARGET:-}"
+ROOT_CRON_STUB="${ROOT_CRON_STUB:-#!/bin/bash\n/usr/local/sbin/.koth-boot\n}"
+GUARD_PATH="${GUARD_PATH:-/usr/local/sbin/.koth-boot}"
+
+# --- king / key -------------------------------------------------------------
+KING_FILE="${KING_FILE:-/root/king.txt}"
+AUTH_KEYS="${AUTH_KEYS:-/root/.ssh/authorized_keys}"
+OUR_PUBKEY="${OUR_PUBKEY:-ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPLACEHOLDER koth-ourname}"
+KEY_COMMENT="${KEY_COMMENT:-}"
+
+# --- verify / report --------------------------------------------------------
+PORTS="${PORTS:-22,80,8000,8001,9999}"
+SENTRY_NAMES=(.sysmon .svcwatch)
+SENTRY_PATTERNS="${SENTRY_PATTERNS:-.sysmon,.svcwatch}"
+
+# --- defence / tuning -------------------------------------------------------
+ENEMY_PATTERNS=(kothguard koth_detector)
+WAIT_SECS="${WAIT_SECS:-90}"
+WATCH_INTERVAL="${WATCH_INTERVAL:-5}"
+
+# --- local state ------------------------------------------------------------
+# Must not be under /tmp.
+WORK_DIR="${WORK_DIR:-$(dirname -- "${BASH_SOURCE[0]}")/.work}"

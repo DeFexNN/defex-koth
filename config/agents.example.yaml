@@ -1,0 +1,97 @@
+# Example agent configuration for defex-koth.
+# Copy to config/agents.yaml and adjust models/clients to what you have logged in.
+# Fields: client (codex|agy|zcode|opencode), model, reasoning_effort, sandbox,
+# max_parallel (concurrent delegate slots per agent), idle_timeout_seconds,
+# account_aggregator: codexctl (optional; balances codex accounts by 5h limit).
+
+# Models and availability are explicit. Never replace a model silently.
+max_parallel: 4
+timeout_seconds: 900
+metrics_file: metrics.yaml
+agents:
+  - id: opencode-deepseek
+    client: opencode
+    command: opencode-defex
+    model: opencode-go/deepseek-v4.1-flash
+    model_verified: true
+    auth_status: stored (OpenCode Console)
+    directions: [web, reversing_pwn, network_traffic, memory_forensics, general]
+    max_parallel: 1
+    metrics: {}
+  - id: agy-gemini
+    client: agy
+    enabled: true
+    # AGY encodes the reasoning level in the model id (gemini-3.8-flash-low);
+    # --effort must match it. Low is the default: high burned 200s+ on trivial
+    # tasks; low answers in seconds (verified 2026-11-03: SUCCESS, correct output).
+    model: gemini-3.8-flash-low
+    reasoning_effort: low
+    mode: accept-edits
+    full_access: true
+    preflight: true
+    # Gemini's provider filter blocks many security-analysis prompts even when the
+    # package is a retired, offline training exercise. The brief is kept out of the
+    # provider prompt (DEFEX_TASK.md); if it still blocks, this explicitly configured
+    # model is used on the same AGY CLI and recorded as the actual model in the receipt.
+    prompt_style: casual
+    fallback:
+      client: agy
+      model: gpt-oss-120b-medium
+      reasoning_effort: null
+      model_verified: true
+    # Kept generous for deep web reviews even on low effort.
+    timeout_seconds: 420
+    idle_timeout_seconds: 180
+    model_verified: true
+    auth_status: inference and tool execution checked by cached preflight at dispatch
+    directions: [web, reversing_pwn, network_traffic, memory_forensics, general]
+    # Gemini's provider filter reliably blocks web briefs that spell out SQLi /
+    # brute-force / exfiltration; route those to Codex instead.
+    blocked_keywords: ["sqli", "sql injection", "brute force", "brute-force", "exfiltrat", "hacked"]
+    max_parallel: 2
+    metrics: {}
+  - id: codex-gpt6-luna
+    client: codex
+    model: gpt-6-luna
+    # 2026-11-04: high added 2-10s of thinking per tool turn (~28 turns/run); user asked for
+    # low as the standard (same policy as AGY low) — bump only for hard reversing fronts.
+    # 2026-11-05: account_aggregator — every NEW codex delegation goes through
+    # codexctl and picks the aggregated account with the least-used 5h window
+    # (per-process CODEX_HOME, parallel-safe); resumed threads stay pinned to
+    # the account that started them (the account dir is recorded in receipts).
+    account_aggregator: codexctl
+    reasoning_effort: low
+    sandbox: danger-full-access
+    model_verified: true
+    auth_status: logged in; GPT-6 Luna inference verified
+    directions: [web, reversing_pwn, network_traffic, memory_forensics, general]
+    # Watchdog: a run with no stream events for 10 minutes is treated as hung
+    # and killed (status "hung"), instead of waiting out the full 900s budget.
+    idle_timeout_seconds: 600
+    # Default reversing favorite from prior CTF runs.
+    # These small seed biases only break ties when measured model metrics are unavailable.
+    routing_bias:
+      reversing_pwn: 0.08
+    # 2026-11-05: relay swarms launch 5-8 codex fronts at once; at 2 slots six
+    # delegates sat invisible in the lock queue (empty transcripts, "running"
+    # forever in the Subagents panel). User wants NO queue for an 8-front
+    # swarm — all delegate slots open at once; queued runs (if ever) emit
+    # "slot wait" events into their relay transcript.
+    max_parallel: 8
+    metrics: {}
+  - id: zcode-user-selected
+    client: zcode
+    command: zcode-cli
+    model: null # read from ~/.zcode/v2/provider_config.json after login/model selection
+    mode: yolo
+    model_verified: false
+    auth_status: managed by ZCode; checked at inference time
+    directions: [web, reversing_pwn, network_traffic, memory_forensics, general]
+    # No idle timeout: zcode-cli is silent until it finishes, so an idle timer
+    # would kill healthy runs; the 900s total timeout is the only guard here.
+    # Current hard-task trials timed out without a flag; this is provisional, not a quality score.
+    routing_bias:
+      reversing_pwn: -0.04
+    max_parallel: 1
+    availability_note: Headless CLI; uses the user's selected ZCode provider/model without storing credentials here.
+    metrics: {}

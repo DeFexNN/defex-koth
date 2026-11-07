@@ -1,0 +1,7 @@
+#!/bin/bash
+# koth — autonomous KotH entrypoint: koth <ip> (or "koth:<ip>").
+# Recon, foothold, vectors, capture, lock, guards, verify and reporting are
+# handled by ctf-tool's `koth auto` mode.
+set -uo pipefail
+HERE="$(cd -- "$(dirname -- "$(readlink -f -- "${BASH_SOURCE[0]}")")" && pwd)"
+exec python3 "${DEFEX_KOTH_TOOL:-$HERE/../ctf-tool/ctf.py}" koth auto "$@"

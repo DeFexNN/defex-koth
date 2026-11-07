@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+set -euo pipefail
+source_path="$(readlink -f -- "${BASH_SOURCE[0]}")"
+project_dir="$(cd -- "$(dirname -- "$source_path")" && pwd)"
+export PYTHONPATH="$project_dir${PYTHONPATH:+:$PYTHONPATH}"
+export OPENCODE_CONFIG="$project_dir/config/opencode.json"
+export OPENCODE_CONFIG_CONTENT="$(cat -- "$OPENCODE_CONFIG")"
+export DEFEX_CTF_CONFIG="${DEFEX_CTF_CONFIG:-$project_dir/config/agents.yaml}"
+export PATH="$project_dir:$PATH"
+case "${1:-}" in
+  agents|benchmark|score|learn|zcode|delegate|preflight|batch|receipt|prune|runs|hold-watch)
+    exec python3 -m ctf_orchestrator.cli --config "$DEFEX_CTF_CONFIG" "$@" ;;
+  run)
+    shift
+    # Patched OpenCode: private server + the native notify_parent and codex_relay plugins.
+    exec opencode-defex run --auto --agent defex --model opencode-go/deepseek-v4.1-flash "$@" ;;
+  --help|-h)
+    cat <<'HELP'
+defex-ctf [directory]                 Open interactive CTF assistant
+ defex-ctf run "question"             Run a single prompt
+ defex-ctf agents                     Show model availability
+ defex-ctf preflight agy              Test AGY inference and command execution
+ defex-ctf receipt ID [--summary]     Inspect a delegate run and its attempts
+ defex-ctf runs --since ISO [--json]  List child runs
+ defex-ctf hold-watch --file PATH --log PATH [--interval SEC] [--count N]
+ defex-ctf prune [--keep-days N]      Delete workspace copies and aged-out receipts
+ defex-ctf zcode login|tui|doctor     Prepare ZCode
+ defex-ctf batch TASKS.yaml --verify  Route tasks and request independent review
+ defex-ctf benchmark TASKS.yaml       Benchmark configured clients
+ defex-ctf score ...                  Score a benchmark result
+ defex-ctf learn REPORT.json          Use manually scored benchmark results
+
+The interactive interface and conversations are provided by OpenCode.
+For background commands, use absolute output/log paths and explicitly cd to the intended workspace.
+Run defex-ctf zcode --help or defex-ctf benchmark --help for details.
+HELP
+    ;;
+  *) exec opencode-defex --auto "$@" ;;
+esac
